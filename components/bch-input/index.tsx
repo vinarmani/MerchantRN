@@ -2,13 +2,13 @@ import BigNumber from "bignumber.js";
 
 import React, { Component } from 'react';
 
-import { NativeModules, TextInput, Text, View, TouchableOpacity } from "react-native"
+import { Button, NativeModules, TextInput, Text, View, TouchableOpacity } from "react-native"
 import AsyncStorage from '@react-native-community/async-storage';
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
-import { AxiosResponse } from "axios";
+import axios, { AxiosResponse } from "axios";
 import { Display } from "./display";
 import { Keypad } from "./keypad";
 import { Payment } from "./payment";
@@ -16,6 +16,7 @@ import { BchInputProps } from './index';
 
 const { Provider, Consumer } = React.createContext('');
 
+import { NavigationEvents } from 'react-navigation';
 
 const deviceLanguage =
   Platform.OS === 'ios'
@@ -23,8 +24,6 @@ const deviceLanguage =
     : NativeModules.I18nManager.localeIdentifier;
 
 const defaultTheme = '#5451c9';
-
-
 
 export interface BchInputProps {
   companyName: string;
@@ -60,7 +59,7 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
   componentDidMount = async () => {
-    //  this.setStringValue();
+
   };
 
   getFiatDecimalPlaces = () => {
@@ -70,7 +69,7 @@ export default class BchInput extends React.Component<Props, State> {
     return 2;
   };
 
-  setStringValue = () => {
+  setStringValue = async () => {
     const { currency, floatVal, bigNumber } = this.state;
 
     const length: number = this.getFiatDecimalPlaces();
@@ -79,10 +78,12 @@ export default class BchInput extends React.Component<Props, State> {
 
     const locale = deviceLanguage.replace("_", "-");
 
-    const currencyString = new Intl.NumberFormat(locale, {
-      style: "currency",
-      currency: currency
-    }).format(fixed);
+    // const currencyString = new Intl.NumberFormat(locale, {
+    //   style: "currency",
+    //   currency: currency
+    // }).format(fixed);
+
+    const currencyString = '$' + fixed.toString();
 
     this.setState({ stringValue: currencyString });
   };
@@ -116,6 +117,18 @@ export default class BchInput extends React.Component<Props, State> {
     await this.setStringValue();
     this.checkValid();
   };
+
+  clearInput = async () => {
+    const { markInvalid } = this.props;
+    const big = new BigNumber(0);
+    await this.setState({
+      floatVal: 0,
+      bigNumber: big,
+      decimalPressed: false
+    });
+    await this.setStringValue();
+    markInvalid();
+  }
 
   checkValid = () => {
     const { markValid, markInvalid } = this.props;
@@ -188,7 +201,7 @@ export default class BchInput extends React.Component<Props, State> {
         data: { priceUsd }
       }
     }: AxiosResponse = await axios.get(
-      `https://api.coincap.io/v2/assets/bitcoin-cash`
+      'https://api.coincap.io/v2/assets/bitcoin-cash'
     );
 
     return priceUsd;
@@ -196,19 +209,24 @@ export default class BchInput extends React.Component<Props, State> {
 
   getSpiceAmount = async (fiatValue: number) => {
     const {
-      data: { price }
+      data: { spicePrice }
     }: AxiosResponse = await axios.get(
-      `https://api.cryptophyl.com/products/SPICE-BCH/ticker`
+      'https://api.cryptophyl.com/products/SPICE-BCH/ticker'
     );
 
     const bchPrice = await this.getBCHPrice();
 
     const bchCost = fiatValue / parseFloat(bchPrice);
 
-    const spiceAmount = bchCost / price;
+    const spiceAmount = bchCost / spicePrice;
 
     return parseFloat(spiceAmount.toFixed(8));
   };
+
+  getUsdhAmount = async (fiatValue: number) => {
+    return parseFloat(fiatValue.toFixed(2));
+  };
+
 
   constructBip70Payload = async () => {
     const {
@@ -220,10 +238,11 @@ export default class BchInput extends React.Component<Props, State> {
     const { updateBip70Payload } = this.props;
     const decimalPlaces: number = this.getFiatDecimalPlaces();
 
-    const isSLP = tokenID !== "";
+    const isSLP = tokenID !== '';
 
     if (isSLP) {
-      const spiceAmount = await this.getSpiceAmount(floatVal);
+      // const spiceAmount = await this.getSpiceAmount(floatVal);
+      const usdhAmount = await this.getUsdhAmount(floatVal);
 
       const slpTxRequest: {
         token_id: string;
@@ -231,7 +250,7 @@ export default class BchInput extends React.Component<Props, State> {
       } = {
         token_id: tokenID,
         slp_outputs: [
-          { address: "1Nmo9N3ZVsL8GFrv6uNfr55a9ni4RoT7Fn", amount: spiceAmount }
+          { address: '1Nmo9N3ZVsL8GFrv6uNfr55a9ni4RoT7Fn', amount: usdhAmount }
         ]
       };
       return updateBip70Payload(slpTxRequest);
@@ -254,7 +273,7 @@ export default class BchInput extends React.Component<Props, State> {
           //   amount: 700
           // },
           {
-            address: "bitcoincash:qqztecjxmglf6hdhhggrc20zgzf7grfz7q6vkhx6jl",
+            address: 'bitcoincash:qqztecjxmglf6hdhhggrc20zgzf7grfz7q6vkhx6jl',
             fiatAmount: floatVal.toFixed(decimalPlaces)
           }
         ]
@@ -265,12 +284,16 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
   render(): JSX.Element {
-    const { companyName, markValid } = this.props;
+    const { companyName } = this.props;
     const { selectedPaymentType } = this.state;
-
 
     return (
       <Container >
+        <NavigationEvents
+          onWillFocus={async () => {
+            await this.clearInput()
+          }}
+        />
         <CompanyNameText>{companyName && companyName}</CompanyNameText>
         <Display parentState={this.state} />
 

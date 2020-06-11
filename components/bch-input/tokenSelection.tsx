@@ -37,6 +37,7 @@ export class TokenSelection extends React.Component<
   render(): JSX.Element {
     const { token, addSelection, active, constructBip70Payload } = this.props;
     const isSVG = token.imagePath.includes(".svg")
+    const isLocal = token.imagePath.includes("http")
 
     return (
       <BaseContainer clickable={false}>
@@ -49,12 +50,12 @@ export class TokenSelection extends React.Component<
           <Container>
             {isSVG ?
               <SvgUri
-                width={wp('15%')}
+                width={wp('10%')}
                 height={hp('10%')}
                 uri={token.imagePath}
               /> :
               <Image
-                style={{ display: 'flex', width: wp('15%'), height: hp('10%') }}
+                style={{ display: 'flex', width: wp('18%'), height: hp('10%') }}
                 source={{ uri: token.imagePath }}
               />}
 

@@ -1,6 +1,6 @@
 import React from "react"
-import { TouchableHighlight, TextInput, Text, View } from "react-native"
-import { AxiosResponse } from "axios";
+import { Button, TouchableHighlight, TextInput, Text, View } from "react-native"
+import axios, { AxiosResponse } from "axios";
 import AsyncStorage from '@react-native-community/async-storage';
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
@@ -11,6 +11,7 @@ import BchInput from "../components/bch-input";
 export interface Props {
   location: object;
   history: any;
+  navigation: any;
 }
 
 interface State {
@@ -35,7 +36,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       companyName: ""
     },
     bip70Payload: {},
-    isValid: false
+    isValid: false,
   };
 
   componentDidMount = () => {
@@ -79,26 +80,16 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     this.setState({ isValid: false });
   };
 
-  submitPayload = async () => {
+  goToConfirmScreen = () => {
     const { bip70Payload } = this.state;
-
-    const {
-      history: { push }
-    } = this.props;
-    const { data }: AxiosResponse = await axios.post(
-      `https://pay.bitcoin.com/create_invoice`,
-      bip70Payload
-    );
-
-    const { paymentId } = data;
-    //    push(`/i/${paymentId}`);
-  };
+    const { navigate } = this.props.navigation;
+    navigate('Pay', {bip70Payload: bip70Payload});
+  }
 
   render(): JSX.Element {
     const {
       merchant: { companyName },
       isValid,
-      bip70Payload
     } = this.state;
 
     return (
@@ -111,6 +102,13 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           updateBip70Payload={this.updateBip70Payload}
         />
 
+      {isValid && (
+        <Button
+          onPress={this.goToConfirmScreen}
+          title="Submit"
+          color="#841584"
+        />
+      )}
 
       </Container>
     );

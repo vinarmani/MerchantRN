@@ -11,19 +11,26 @@ const defaultTheme = '#5451c9';
 
 const mockupArray = [
   {
+    tokenID: 'c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479',
+    imagePath: 'https://tokens.bch.sx/128/c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479.png',
+    name: 'USDH',
+    ticker: 'USDH',
+    decimal_count: 8
+  },
+  {
     name: "Bitcoin Cash",
     ticker: "BCH",
     tokenID: "",
     decimal_count: 8,
     imagePath: 'https://learnbitcoin.cash/bch.png'
   },
-  {
+  /*{
     tokenID: "4de69e374a8ed21cbddd47f2338cc0f479dc58daa2bbe11cd604ca488eca0ddf",
     imagePath: 'https://learnbitcoin.cash/spice.svg',
     name: "SPICE",
     ticker: "SPICE",
     decimal_count: 8
-  }
+  } */
 ];
 
 console.log('mockupArray', mockupArray);
@@ -55,7 +62,7 @@ export class Payment extends React.Component<PaymentProps, PaymentState> {
     const {
       addSelection,
       selectedPaymentType,
-      constructBip70Payload
+      constructBip70Payload,
     } = this.props;
     if (selectedPaymentType === null) {
       return null;
