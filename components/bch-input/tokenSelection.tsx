@@ -56,7 +56,7 @@ export class TokenSelection extends React.Component<
               /> :
               <Image
                 style={{ display: 'flex', width: wp('18%'), height: hp('10%') }}
-                source={{ uri: token.imagePath }}
+                source={token.localImage}
               />}
 
 

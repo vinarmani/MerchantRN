@@ -5,6 +5,8 @@ import axios, { AxiosResponse } from "axios";
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import QRCode from 'react-native-qrcode-svg';
+import { w3cwebsocket } from "websocket";
 
 export interface Props {
   navigation: any
@@ -15,6 +17,7 @@ interface State {
   id: string;
   paymentData: null | object;
   errorMsg: string;
+  invoiceStatus: string;
   response: object;
 }
 
@@ -25,6 +28,7 @@ export default class Init extends React.Component<Props, State> {
     id: '',
     paymentData: null,
     errorMsg: '',
+    invoiceStatus: 'open',
     response: {}
   };
 
@@ -36,30 +40,42 @@ export default class Init extends React.Component<Props, State> {
   }
 
   submitPayload = async (bip70Payload) => {
+    const { paymentData } = this.state;
+    if (paymentData) {
+      return;
+    }
+
     const { data }: AxiosResponse = await axios.post(
-      `https://pay.bitcoin.com/create_invoice`,
+      'https://pay.bitcoin.com/create_invoice',
       bip70Payload
     );
+
+    // Set up the websocket
+    const client = new w3cwebsocket(
+      `wss://pay.bitcoin.com/s/${data.paymentId}`,
+      'echo-protocol',
+    );
+
+    client.onerror = async (e) => {
+      console.log('Connection Error');
+    }
+
+    const self = this;
+    client.onmessage = (e: any) => {
+      if (typeof e.data === 'string') {
+        const invoiceData = JSON.parse(e.data);
+        self.handleOnChange(invoiceData);
+      }
+    }
+
     this.setState({ paymentData: data })
   };
 
-  markValid() {
-    this.setState({ isValid: true });
-  }
-
-  markInvalid() {
-    this.setState({ isValid: false });
-  }
-
-  handleOnChange = (e: any) => {
-    const value: string = e;
-    if (value.length >= 4) {
-      this.markValid();
-    } else {
-      this.markInvalid();
+  handleOnChange = (invoiceData: any) => {
+    const { status } = invoiceData;
+    if (status === 'paid' || status === 'expired') {
+      this.setState({ paymentData: invoiceData });
     }
-
-    this.setState({ id: value });
   };
 
   handlePress = () => {
@@ -68,38 +84,44 @@ export default class Init extends React.Component<Props, State> {
     navigate('Invoice');
   }
 
-  _onLoad = () => {
-    this.setState({ loaded: true })
-  }
-
-
   render() {
-    const { isValid, paymentData, loaded } = this.state
-    let qrUrl;
+    const { paymentData } = this.state
     let headerText = 'Loading...'
+    let qrUri;
     if (paymentData) {
-      qrUrl = paymentData.paymentUrl.replace('/i/', '/qr/');
-      headerText = 'Scan QR code to pay $' + paymentData.fiatTotal + ' in USDH';
+      headerText =
+        paymentData.status == 'open'
+          ? 'Scan QR code to pay $' +
+            parseFloat(paymentData.fiatTotal).toFixed(2) +
+            ' in ' +
+            paymentData.paymentAsset
+          : '';
+      let qrPrefix =
+        paymentData.paymentAsset == 'BCH' ? 'bitcoincash:' : 'simpleledger:';
+      qrUri = qrPrefix + '?r=' + paymentData.paymentUrl;
     }
 
     return (
       <Container>
         <HeaderText>{headerText}</HeaderText>
-        {!loaded && <ActivityIndicator size="large" color="#0000ff" />}
-        {qrUrl && (
-          <Image
-            style={{ width: 300, height: 300 }}
-            source={{uri: qrUrl}}
-            onLayout={this._onLoad}
-            fadeDuration={0}
-          />
+        {!paymentData && <ActivityIndicator size="large" color="#0000ff" />}
+        {paymentData && paymentData.status === 'open' && (
+          <QRCode value={qrUri} size={200} ecl={'H'} />
+        )}
+        {paymentData && paymentData.status === 'paid' && (
+          <Image source={require('../assets/paid_red.png')} />
+        )}
+        {paymentData && paymentData.status === 'expired' && (
+          <HeaderText>Invoice Expired. Please try again.</HeaderText>
         )}
 
-        <ProceedButton
+        <CancelButton
           onPress={this.handlePress}
           style={{backgroundColor: '#5551c9'}}>
-          <ButtonText>Cancel</ButtonText>
-        </ProceedButton>
+          <ButtonText>
+            {paymentData && paymentData.status === 'open' ? 'Cancel' : 'Exit'}
+          </ButtonText>
+        </CancelButton>
       </Container>
     )
   }
@@ -118,6 +140,7 @@ const HeaderText = styled.Text`
   font-weight: 500;
   color: #5551c9;
   margin-top: ${hp('5%')};
+  margin-bottom: 40px;
 `;
 
 const ButtonText = styled.Text`
@@ -126,10 +149,10 @@ const ButtonText = styled.Text`
   color: #ffffff;
 `;
 
-const ProceedButton = styled.TouchableHighlight`
+const CancelButton = styled.TouchableHighlight`
   background-color: #b0aed6;
   border-radius: 100px;
   width: ${wp('40%')};
-  margin-top:${hp('4%')};
+  margin-top:${hp('10%')};
   padding: 20px 0;
 `;

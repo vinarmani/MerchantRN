@@ -5,6 +5,7 @@
   "scripts": {
     "start": "react-native start --reset-cache",
     "dev": "react-native run-android --no-jetifier",
+    "log-android": "react-native log-android",
     "cleancache": "watchman watch-del-all && rm -f yarn.lock && rm -rf node_modules && yarn && yarn start --reset-cache",
     "lint": "eslint ."
   },
@@ -15,11 +16,13 @@
     "react": "16.8.6",
     "react-native": "0.60.5",
     "react-native-gesture-handler": "^1.4.1",
+    "react-native-qrcode-svg": "^6.0.6",
     "react-native-responsive-screen": "^1.3.0",
     "react-native-svg": "^9.9.4",
     "react-navigation": "^4.0.5",
     "react-navigation-stack": "^1.8.0",
-    "styled-components": "^4.4.0"
+    "styled-components": "^4.4.0",
+    "websocket": "^1.0.31"
   },
   "devDependencies": {
     "@babel/core": "^7.6.0",

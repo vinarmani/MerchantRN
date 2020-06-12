@@ -1,9 +1,8 @@
 import BigNumber from "bignumber.js";
 
-import React, { Component } from 'react';
+import React from 'react';
 
-import { Button, NativeModules, TextInput, Text, View, TouchableOpacity } from "react-native"
-import AsyncStorage from '@react-native-community/async-storage';
+import { NativeModules, Text, View } from "react-native"
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
@@ -14,7 +13,7 @@ import { Keypad } from "./keypad";
 import { Payment } from "./payment";
 import { BchInputProps } from './index';
 
-const { Provider, Consumer } = React.createContext('');
+const { Consumer } = React.createContext('');
 
 import { NavigationEvents } from 'react-navigation';
 
@@ -250,7 +249,10 @@ export default class BchInput extends React.Component<Props, State> {
       } = {
         token_id: tokenID,
         slp_outputs: [
-          { address: '1Nmo9N3ZVsL8GFrv6uNfr55a9ni4RoT7Fn', amount: usdhAmount }
+          {
+            address: 'simpleledger:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dgtdpjwrsa',
+            amount: usdhAmount,
+          },
         ]
       };
       return updateBip70Payload(slpTxRequest);
@@ -273,7 +275,7 @@ export default class BchInput extends React.Component<Props, State> {
           //   amount: 700
           // },
           {
-            address: 'bitcoincash:qqztecjxmglf6hdhhggrc20zgzf7grfz7q6vkhx6jl',
+            address: 'bitcoincash:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dg8k2fmrwr',
             fiatAmount: floatVal.toFixed(decimalPlaces)
           }
         ]

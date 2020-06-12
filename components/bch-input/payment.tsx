@@ -1,5 +1,5 @@
 import React from "react"
-import { NativeModules, TextInput, TouchableHighlight, Text, View } from "react-native"
+import { NativeModules, Text, View } from "react-native"
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
@@ -13,6 +13,7 @@ const mockupArray = [
   {
     tokenID: 'c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479',
     imagePath: 'https://tokens.bch.sx/128/c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479.png',
+    localImage: require('../../assets/usdh.png'),
     name: 'USDH',
     ticker: 'USDH',
     decimal_count: 8
@@ -22,7 +23,8 @@ const mockupArray = [
     ticker: "BCH",
     tokenID: "",
     decimal_count: 8,
-    imagePath: 'https://learnbitcoin.cash/bch.png'
+    imagePath: 'https://learnbitcoin.cash/bch.png',
+    localImage: require('../../assets/bch.png'),
   },
   /*{
     tokenID: "4de69e374a8ed21cbddd47f2338cc0f479dc58daa2bbe11cd604ca488eca0ddf",
