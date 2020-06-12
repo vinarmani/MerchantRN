@@ -234,7 +234,7 @@ export default class BchInput extends React.Component<Props, State> {
       selectedPaymentType: { tokenID },
       currency
     } = this.state;
-    const { updateBip70Payload } = this.props;
+    const { updateBip70Payload, companyName } = this.props;
     const decimalPlaces: number = this.getFiatDecimalPlaces();
 
     const isSLP = tokenID !== '';
@@ -243,9 +243,12 @@ export default class BchInput extends React.Component<Props, State> {
       // const spiceAmount = await this.getSpiceAmount(floatVal);
       const usdhAmount = await this.getUsdhAmount(floatVal);
 
+      const userMemo = 'Payment of ' + usdhAmount + ' USDH to ' + companyName;
+
       const slpTxRequest: {
         token_id: string;
         slp_outputs: { address: string; amount: number }[];
+        memo?: string;
       } = {
         token_id: tokenID,
         slp_outputs: [
@@ -253,10 +256,17 @@ export default class BchInput extends React.Component<Props, State> {
             address: 'simpleledger:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dgtdpjwrsa',
             amount: usdhAmount,
           },
-        ]
+        ],
+        memo: userMemo,
       };
       return updateBip70Payload(slpTxRequest);
     } else {
+      const userMemo =
+        'Payment of $' +
+        floatVal.toFixed(decimalPlaces) +
+        ' worth of BCH to ' +
+        companyName;
+
       const bchTxRequest: {
         outputs: {
           script?: string;
@@ -267,6 +277,7 @@ export default class BchInput extends React.Component<Props, State> {
         currency?: string;
         fiat?: string;
         fiatRate?: number;
+        memo?: string;
       } = {
         fiat: currency,
         outputs: [
@@ -278,7 +289,8 @@ export default class BchInput extends React.Component<Props, State> {
             address: 'bitcoincash:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dg8k2fmrwr',
             fiatAmount: floatVal.toFixed(decimalPlaces)
           }
-        ]
+        ],
+        memo: userMemo,
       };
 
       return updateBip70Payload(bchTxRequest);
