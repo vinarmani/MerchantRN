@@ -11,7 +11,6 @@ import axios, { AxiosResponse } from "axios";
 import { Display } from "./display";
 import { Keypad } from "./keypad";
 import { Payment } from "./payment";
-import { BchInputProps } from './index';
 
 const { Consumer } = React.createContext('');
 
@@ -28,6 +27,7 @@ export interface BchInputProps {
   companyName: string;
   markValid: Function;
   markInvalid: Function;
+  isValid: Boolean;
   updateBip70Payload: Function;
 }
 
@@ -37,29 +37,30 @@ interface BchInputState {
   stringValue: string;
   currency: string;
   decimalPressed: boolean;
+  leadingZero: boolean;
   selectedPaymentType: {
     name: string;
     ticker: string;
     tokenID: string;
     decimal_count: number;
     imagePath: string;
-  };
+  } | null;
 }
-
 
 export default class BchInput extends React.Component<Props, State> {
   state: BchInputState = {
     floatVal: 0,
-    bigNumber: {},
-    stringValue: "---",
-    currency: "USD",
+    bigNumber: new BigNumber(0),
+    stringValue: '$0.00',
+    currency: 'USD',
     decimalPressed: false,
-    selectedPaymentType: null
+    leadingZero: false,
+    selectedPaymentType: null,
   };
 
-  componentDidMount = async () => {
+  // componentDidMount = async () => {
 
-  };
+  // };
 
   getFiatDecimalPlaces = () => {
     // hardcode USD
@@ -68,8 +69,11 @@ export default class BchInput extends React.Component<Props, State> {
     return 2;
   };
 
-  setStringValue = async () => {
-    const { currency, floatVal, bigNumber } = this.state;
+  setStringValue = async (floatObj: object | undefined) => {
+    if (!floatObj) {
+      return { stringValue: '$0.00' };
+    }
+    const { floatVal } = floatObj;
 
     const length: number = this.getFiatDecimalPlaces();
     const big = new BigNumber(floatVal);
@@ -84,14 +88,18 @@ export default class BchInput extends React.Component<Props, State> {
 
     const currencyString = '$' + fixed.toString();
 
-    this.setState({ stringValue: currencyString });
+    return { stringValue: currencyString };
   };
 
   updateInput = async (val: number) => {
-    await this.updateIntVal(val);
-    await this.setStringValue();
+    const floatObj = await this.updateIntVal(val);
+    const stringValue = await this.setStringValue(floatObj);
+    this.setState({
+      ...floatObj,
+      ...stringValue,
+    })
     this.checkValid();
-    await this.constructBip70Payload();
+    this.constructBip70Payload();
   };
 
   deleteInput = async () => {
@@ -100,70 +108,98 @@ export default class BchInput extends React.Component<Props, State> {
 
     const int = parseFloat(floatString);
     const big = new BigNumber(floatString);
+    let floatObj;
     if (!isNaN(int)) {
-      await this.setState({
+      floatObj = {
         floatVal: int,
         bigNumber: big,
-        decimalPressed: false
-      });
+        decimalPressed: false,
+      };
     } else {
-      await this.setState({
+      floatObj = {
         floatVal: 0,
         bigNumber: big,
-        decimalPressed: false
-      });
+        decimalPressed: false,
+      };
     }
-    await this.setStringValue();
+    const stringValue = await this.setStringValue(floatObj);
+    this.setState({
+      ...floatObj,
+      ...stringValue,
+    });
     this.checkValid();
   };
 
   clearInput = async () => {
     const { markInvalid } = this.props;
     const big = new BigNumber(0);
-    await this.setState({
+    const floatObj = {
       floatVal: 0,
       bigNumber: big,
-      decimalPressed: false
+      decimalPressed: false,
+      leadingZero: false,
+    };
+    const stringValue = await this.setStringValue(floatObj);
+    this.setState({
+      ...floatObj,
+      ...stringValue,
     });
-    await this.setStringValue();
     markInvalid();
-  }
+  };
 
   checkValid = () => {
-    const { markValid, markInvalid } = this.props;
+    const { markValid, markInvalid, isValid } = this.props;
     const { bigNumber } = this.state;
 
     try {
       const value = bigNumber.c[0];
-      if (value > 0) {
+      if (value > 0 && !isValid) {
         markValid();
       }
     } catch (error) {
-      markInvalid();
+      if (isValid) {
+        markInvalid();
+      }
     }
   };
 
   updateIntVal = async (val: number) => {
-    const { floatVal, decimalPressed } = this.state;
+    const { floatVal, decimalPressed, bigNumber, leadingZero } = this.state;
     let concat: string;
     concat = `${floatVal}${val}`;
 
     const canEdit = this.checkCanEdit(concat);
 
+    let setZero = false;
+
     if (decimalPressed) {
       const containsDecimal = /\./.test(concat);
       if (!containsDecimal) {
-        concat = `${floatVal}.${val}`;
+        if (leadingZero) {
+          concat = `${floatVal}.0${val}`;
+        } else {
+          concat = `${floatVal}.${val}`;
+        }
+        if (val === 0) {
+          setZero = true;
+        }
       }
     }
 
     if (canEdit) {
       const big = new BigNumber(concat);
 
-      await this.setState({
+      return {
         floatVal: parseFloat(concat),
-        bigNumber: big
-      });
+        bigNumber: big,
+        leadingZero: setZero,
+      };
+    } else {
+      return {
+        floatVal: floatVal,
+        bigNumber: bigNumber,
+        leadingZero: setZero,
+      };
     }
   };
 
@@ -191,7 +227,7 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
   addSelection = async (data: object) => {
-    await this.setState({ selectedPaymentType: data });
+    this.setState({ selectedPaymentType: data });
   };
 
   getBCHPrice = async () => {
@@ -222,12 +258,12 @@ export default class BchInput extends React.Component<Props, State> {
     return parseFloat(spiceAmount.toFixed(8));
   };
 
-  getUsdhAmount = async (fiatValue: number) => {
+  getUsdhAmount = (fiatValue: number) => {
     return parseFloat(fiatValue.toFixed(2));
   };
 
 
-  constructBip70Payload = async () => {
+  constructBip70Payload = () => {
     const {
       floatVal,
       stringValue,
@@ -241,7 +277,7 @@ export default class BchInput extends React.Component<Props, State> {
 
     if (isSLP) {
       // const spiceAmount = await this.getSpiceAmount(floatVal);
-      const usdhAmount = await this.getUsdhAmount(floatVal);
+      const usdhAmount = this.getUsdhAmount(floatVal);
 
       const userMemo = 'Payment of ' + usdhAmount + ' USDH to ' + companyName;
 
@@ -313,7 +349,7 @@ export default class BchInput extends React.Component<Props, State> {
 
         <Keypad
           updateInput={this.updateInput}
-          deleteInput={this.deleteInput}
+          clearInput={this.clearInput}
           handleDecimal={this.handleDecimal}
         />
 

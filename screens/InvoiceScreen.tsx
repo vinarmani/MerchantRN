@@ -99,6 +99,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           companyName={companyName}
           markValid={this.markValid}
           markInvalid={this.markInvalid}
+          isValid={isValid}
           updateBip70Payload={this.updateBip70Payload}
         />
 

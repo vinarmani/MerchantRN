@@ -86,7 +86,7 @@ export default class Init extends React.Component<Props, State> {
 
   render() {
     const { paymentData } = this.state
-    let headerText = 'Loading...'
+    let headerText = 'Preparing invoice...'
     let qrUri;
     if (paymentData) {
       headerText =

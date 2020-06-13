@@ -8,7 +8,7 @@ const defaultTheme = '#5451c9';
 
 export interface KeypadProps {
   updateInput: Function;
-  deleteInput: Function;
+  clearInput: Function;
   handleDecimal: Function;
 }
 
@@ -20,7 +20,7 @@ export class Keypad extends React.Component<KeypadProps, KeypadState> {
   componentDidMount = () => { };
 
   render(): JSX.Element {
-    const { updateInput, deleteInput, handleDecimal } = this.props;
+    const { updateInput, clearInput, handleDecimal } = this.props;
 
     return (
       <Container>
@@ -57,8 +57,8 @@ export class Keypad extends React.Component<KeypadProps, KeypadState> {
         <NumberInput onPress={() => updateInput(0)}>
           <NumberText> 0</NumberText>
         </NumberInput>
-        <NumberInput onPress={() => deleteInput()}>
-          <NumberText> del</NumberText>
+        <NumberInput onPress={() => clearInput()}>
+          <NumberText> clear</NumberText>
         </NumberInput>
       </Container >
     );
