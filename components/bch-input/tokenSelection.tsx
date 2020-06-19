@@ -43,7 +43,7 @@ export class TokenSelection extends React.Component<
       <BaseContainer clickable={false}>
         <TokenChoice style={{ backgroundColor: active ? defaultTheme : '#FBFCFF' }} onPress={async () => {
           await addSelection(token);
-          constructBip70Payload();
+          await constructBip70Payload();
         }}>
 
 

@@ -99,7 +99,7 @@ export default class BchInput extends React.Component<Props, State> {
       ...stringValue,
     })
     this.checkValid();
-    this.constructBip70Payload();
+    await this.constructBip70Payload();
   };
 
   deleteInput = async () => {
@@ -263,7 +263,7 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
 
-  constructBip70Payload = () => {
+  constructBip70Payload = async () => {
     const {
       floatVal,
       stringValue,
@@ -285,23 +285,26 @@ export default class BchInput extends React.Component<Props, State> {
         token_id: string;
         slp_outputs: { address: string; amount: number }[];
         memo?: string;
+        fiatTotal?: number;
       } = {
         token_id: tokenID,
         slp_outputs: [
           {
-            address: 'simpleledger:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dgtdpjwrsa',
+            address: '1MyNBB5nmjs2ktLNqLmSmQdpuAF71sspWg', // Legacy only
             amount: usdhAmount,
           },
         ],
         memo: userMemo,
+        fiatTotal: usdhAmount,
       };
       return updateBip70Payload(slpTxRequest);
     } else {
+      const fiatTotal = floatVal.toFixed(decimalPlaces);
       const userMemo =
-        'Payment of $' +
-        floatVal.toFixed(decimalPlaces) +
-        ' worth of BCH to ' +
-        companyName;
+        'Payment of $' + fiatTotal + ' worth of BCH to ' + companyName;
+
+      const bchPrice = await this.getBCHPrice()
+      const bchAmount = parseFloat(fiatTotal) / parseFloat(bchPrice);
 
       const bchTxRequest: {
         outputs: {
@@ -314,6 +317,7 @@ export default class BchInput extends React.Component<Props, State> {
         fiat?: string;
         fiatRate?: number;
         memo?: string;
+        fiatTotal?: number;
       } = {
         fiat: currency,
         outputs: [
@@ -322,11 +326,13 @@ export default class BchInput extends React.Component<Props, State> {
           //   amount: 700
           // },
           {
-            address: 'bitcoincash:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dg8k2fmrwr',
-            fiatAmount: floatVal.toFixed(decimalPlaces)
+            address: '1MyNBB5nmjs2ktLNqLmSmQdpuAF71sspWg', // Legacy only
+            amount: Math.ceil(bchAmount * 100000000),
+            //fiatAmount: floatVal.toFixed(decimalPlaces)
           }
         ],
         memo: userMemo,
+        fiatTotal: parseFloat(fiatTotal),
       };
 
       return updateBip70Payload(bchTxRequest);

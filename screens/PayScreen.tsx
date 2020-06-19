@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-community/async-storage';
 import axios, { AxiosResponse } from "axios";
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
-import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp, heightPercentageToDP } from 'react-native-responsive-screen';
 import QRCode from 'react-native-qrcode-svg';
 import { w3cwebsocket } from "websocket";
 
@@ -45,34 +45,58 @@ export default class Init extends React.Component<Props, State> {
       return;
     }
 
-    const { data }: AxiosResponse = await axios.post(
-      'https://pay.bitcoin.com/create_invoice',
-      bip70Payload
+    let { data }: AxiosResponse = await axios.post(
+      'https://pay.cointext.io/create_invoice',
+      bip70Payload,
     );
+
+    data.fiatAmount = bip70Payload.fiatTotal;
+    data.paymentUrl = 'https://pay.cointext.io/i/' + data.paymentId;
+    data.paymentAsset = bip70Payload.token_id ? 'USDH' : 'BCH';
+    console.log('axios data', data);
 
     // Set up the websocket
     const client = new w3cwebsocket(
-      `wss://pay.bitcoin.com/s/${data.paymentId}`,
+      // `wss://pay.bitcoin.com/s/${data.paymentId}`,
+      'wss://pay.cointext.io',
       'echo-protocol',
     );
 
+    client.onopen = function() {
+      client.send(data.paymentId);
+    };
+
     client.onerror = async (e) => {
-      console.log('Connection Error');
-    }
+      // console.log('Connection Error');
+    };
 
     const self = this;
     client.onmessage = (e: any) => {
       if (typeof e.data === 'string') {
-        const invoiceData = JSON.parse(e.data);
-        self.handleOnChange(invoiceData);
+        try {
+          const invoiceData = JSON.parse(e.data);
+          if (typeof invoiceData == 'object') {
+            console.log('invoiceData', invoiceData)
+            self.handleOnChange(invoiceData);
+          }
+        } catch (err) {
+          console.log(err);
+        }
       }
-    }
+    };
 
     this.setState({ paymentData: data })
   };
 
   handleOnChange = (invoiceData: any) => {
-    const { status } = invoiceData;
+    let { status } = invoiceData;
+    if (!status) {
+      status = 'expired';
+      invoiceData = {
+        status: status,
+      }
+    }
+    console.log('status', status);
     if (status === 'paid' || status === 'expired') {
       this.setState({ paymentData: invoiceData });
     }
@@ -92,7 +116,7 @@ export default class Init extends React.Component<Props, State> {
       headerText =
         paymentData.status == 'open'
           ? 'Scan QR code to pay $' +
-            parseFloat(paymentData.fiatTotal).toFixed(2) +
+            parseFloat(paymentData.fiatAmount).toFixed(2) +
             ' in ' +
             paymentData.paymentAsset
           : '';
