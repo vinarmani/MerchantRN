@@ -23,6 +23,13 @@ const deviceLanguage =
 
 const defaultTheme = '#5451c9';
 
+const bchaddr = require('bchaddrjs-slp');
+
+const merchantBchAddress =
+  'bitcoincash:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dg8k2fmrwr';
+const merchantSlpAddress =
+  'simpleledger:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dgtdpjwrsa';
+
 export interface BchInputProps {
   companyName: string;
   markValid: Function;
@@ -290,7 +297,7 @@ export default class BchInput extends React.Component<Props, State> {
         token_id: tokenID,
         slp_outputs: [
           {
-            address: '1MyNBB5nmjs2ktLNqLmSmQdpuAF71sspWg', // Legacy only
+            address: bchaddr.toLegacyAddress(merchantSlpAddress), // Legacy only
             amount: usdhAmount,
           },
         ],
@@ -326,7 +333,7 @@ export default class BchInput extends React.Component<Props, State> {
           //   amount: 700
           // },
           {
-            address: '1MyNBB5nmjs2ktLNqLmSmQdpuAF71sspWg', // Legacy only
+            address: bchaddr.toLegacyAddress(merchantBchAddress), // Legacy only
             amount: Math.ceil(bchAmount * 100000000),
             //fiatAmount: floatVal.toFixed(decimalPlaces)
           }
