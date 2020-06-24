@@ -23,28 +23,15 @@ const deviceLanguage =
 
 const defaultTheme = '#5451c9';
 
-const bchaddr = require('bchaddrjs-slp');
-
-const merchantBchAddress =
-  'bitcoincash:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dg8k2fmrwr';
-const merchantSlpAddress =
-  'simpleledger:qrnqklrz3dkc9vvzstqgtj25ntxlfzu6dgtdpjwrsa';
-
 export interface BchInputProps {
   companyName: string;
-  markValid: Function;
-  markInvalid: Function;
+  addSelection: Function;
   isValid: Boolean;
-  updateBip70Payload: Function;
-}
-
-interface BchInputState {
+  stringValue: string;
   floatVal: number;
   bigNumber: any;
-  stringValue: string;
-  currency: string;
-  decimalPressed: boolean;
   leadingZero: boolean;
+  updatePaymentValues: Function;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -54,15 +41,13 @@ interface BchInputState {
   } | null;
 }
 
+interface BchInputState {
+  decimalPressed: boolean;
+}
+
 export default class BchInput extends React.Component<Props, State> {
   state: BchInputState = {
-    floatVal: 0,
-    bigNumber: new BigNumber(0),
-    stringValue: '$0.00',
-    currency: 'USD',
     decimalPressed: false,
-    leadingZero: false,
-    selectedPaymentType: null,
   };
 
   // componentDidMount = async () => {
@@ -71,12 +56,10 @@ export default class BchInput extends React.Component<Props, State> {
 
   getFiatDecimalPlaces = () => {
     // hardcode USD
-
-    const { currency } = this.state;
     return 2;
   };
 
-  setStringValue = async (floatObj: object | undefined) => {
+  setStringValue = (floatObj: object | undefined) => {
     if (!floatObj) {
       return { stringValue: '$0.00' };
     }
@@ -98,80 +81,88 @@ export default class BchInput extends React.Component<Props, State> {
     return { stringValue: currencyString };
   };
 
-  updateInput = async (val: number) => {
-    const floatObj = await this.updateIntVal(val);
-    const stringValue = await this.setStringValue(floatObj);
-    this.setState({
+  updateInput = (val: number) => {
+    const {updatePaymentValues} = this.props;
+    const floatObj = this.updateIntVal(val);
+    const stringValue = this.setStringValue(floatObj);
+    const isValid = {
+      isValid: this.checkValid(floatObj),
+    };
+    // const payload = this.constructBip70Payload();
+    updatePaymentValues({
       ...floatObj,
       ...stringValue,
-    })
-    this.checkValid();
-    await this.constructBip70Payload();
-  };
-
-  deleteInput = async () => {
-    const { floatVal } = this.state;
-    const floatString = floatVal.toString().slice(0, -1);
-
-    const int = parseFloat(floatString);
-    const big = new BigNumber(floatString);
-    let floatObj;
-    if (!isNaN(int)) {
-      floatObj = {
-        floatVal: int,
-        bigNumber: big,
-        decimalPressed: false,
-      };
-    } else {
-      floatObj = {
-        floatVal: 0,
-        bigNumber: big,
-        decimalPressed: false,
-      };
-    }
-    const stringValue = await this.setStringValue(floatObj);
-    this.setState({
-      ...floatObj,
-      ...stringValue,
+      ...isValid,
     });
-    this.checkValid();
   };
+
+  // deleteInput = async () => {
+  //   const { floatVal } = this.state;
+  //   const floatString = floatVal.toString().slice(0, -1);
+
+  //   const int = parseFloat(floatString);
+  //   const big = new BigNumber(floatString);
+  //   let floatObj;
+  //   if (!isNaN(int)) {
+  //     floatObj = {
+  //       floatVal: int,
+  //       bigNumber: big,
+  //       decimalPressed: false,
+  //     };
+  //   } else {
+  //     floatObj = {
+  //       floatVal: 0,
+  //       bigNumber: big,
+  //       decimalPressed: false,
+  //     };
+  //   }
+  //   const stringValue = this.setStringValue(floatObj);
+  //   this.setState({
+  //     ...floatObj,
+  //     ...stringValue,
+  //   });
+  //   this.checkValid(floatObj);
+  // };
 
   clearInput = async () => {
-    const { markInvalid } = this.props;
+    const {updatePaymentValues} = this.props;
     const big = new BigNumber(0);
     const floatObj = {
       floatVal: 0,
       bigNumber: big,
-      decimalPressed: false,
       leadingZero: false,
     };
-    const stringValue = await this.setStringValue(floatObj);
-    this.setState({
+    const stringValue = this.setStringValue(floatObj);
+    const isValid = {isValid: false};
+    updatePaymentValues({
       ...floatObj,
       ...stringValue,
+      ...isValid,
     });
-    markInvalid();
+    this.setState({
+      decimalPressed: false
+    });
   };
 
-  checkValid = () => {
-    const { markValid, markInvalid, isValid } = this.props;
-    const { bigNumber } = this.state;
+  checkValid = (floatObj) => {
+    const { isValid } = this.props;
+    const { bigNumber } = floatObj;
 
     try {
       const value = bigNumber.c[0];
-      if (value > 0 && !isValid) {
-        markValid();
+      if (value > 0) {
+        return true;
       }
     } catch (error) {
       if (isValid) {
-        markInvalid();
+        return false;
       }
     }
   };
 
-  updateIntVal = async (val: number) => {
-    const { floatVal, decimalPressed, bigNumber, leadingZero } = this.state;
+  updateIntVal = (val: number) => {
+    const {decimalPressed} = this.state;
+    const {floatVal, bigNumber, leadingZero} = this.props;
     let concat: string;
     concat = `${floatVal}${val}`;
 
@@ -233,132 +224,19 @@ export default class BchInput extends React.Component<Props, State> {
     }
   };
 
-  addSelection = async (data: object) => {
-    this.setState({ selectedPaymentType: data });
-  };
-
-  getBCHPrice = async () => {
-    const {
-      data: {
-        data: { priceUsd }
-      }
-    }: AxiosResponse = await axios.get(
-      'https://api.coincap.io/v2/assets/bitcoin-cash'
-    );
-
-    return priceUsd;
-  };
-
-  getSpiceAmount = async (fiatValue: number) => {
-    const {
-      data: { spicePrice }
-    }: AxiosResponse = await axios.get(
-      'https://api.cryptophyl.com/products/SPICE-BCH/ticker'
-    );
-
-    const bchPrice = await this.getBCHPrice();
-
-    const bchCost = fiatValue / parseFloat(bchPrice);
-
-    const spiceAmount = bchCost / spicePrice;
-
-    return parseFloat(spiceAmount.toFixed(8));
-  };
-
-  getUsdhAmount = (fiatValue: number) => {
-    return parseFloat(fiatValue.toFixed(2));
-  };
-
-
-  constructBip70Payload = async () => {
-    const {
-      floatVal,
-      stringValue,
-      selectedPaymentType: { tokenID },
-      currency
-    } = this.state;
-    const { updateBip70Payload, companyName } = this.props;
-    const decimalPlaces: number = this.getFiatDecimalPlaces();
-
-    const isSLP = tokenID !== '';
-
-    if (isSLP) {
-      // const spiceAmount = await this.getSpiceAmount(floatVal);
-      const usdhAmount = this.getUsdhAmount(floatVal);
-
-      const userMemo = 'Payment of ' + usdhAmount + ' USDH to ' + companyName;
-
-      const slpTxRequest: {
-        token_id: string;
-        slp_outputs: { address: string; amount: number }[];
-        memo?: string;
-        fiatTotal?: number;
-      } = {
-        token_id: tokenID,
-        slp_outputs: [
-          {
-            address: bchaddr.toLegacyAddress(merchantSlpAddress), // Legacy only
-            amount: usdhAmount,
-          },
-        ],
-        memo: userMemo,
-        fiatTotal: usdhAmount,
-      };
-      return updateBip70Payload(slpTxRequest);
-    } else {
-      const fiatTotal = floatVal.toFixed(decimalPlaces);
-      const userMemo =
-        'Payment of $' + fiatTotal + ' worth of BCH to ' + companyName;
-
-      const bchPrice = await this.getBCHPrice()
-      const bchAmount = parseFloat(fiatTotal) / parseFloat(bchPrice);
-
-      const bchTxRequest: {
-        outputs: {
-          script?: string;
-          amount?: number;
-          fiatAmount?: any;
-          address?: string;
-        }[];
-        currency?: string;
-        fiat?: string;
-        fiatRate?: number;
-        memo?: string;
-        fiatTotal?: number;
-      } = {
-        fiat: currency,
-        outputs: [
-          // {
-          //   script: "76a914018a532856c45d74f7d67112547596a03819077188ac",
-          //   amount: 700
-          // },
-          {
-            address: bchaddr.toLegacyAddress(merchantBchAddress), // Legacy only
-            amount: Math.ceil(bchAmount * 100000000),
-            //fiatAmount: floatVal.toFixed(decimalPlaces)
-          }
-        ],
-        memo: userMemo,
-        fiatTotal: parseFloat(fiatTotal),
-      };
-
-      return updateBip70Payload(bchTxRequest);
-    }
-  };
-
   render(): JSX.Element {
     const { companyName } = this.props;
-    const { selectedPaymentType } = this.state;
+    const { stringValue, addSelection, selectedPaymentType } = this.props;
 
     return (
       <Container >
         <NavigationEvents
           onWillFocus={async () => {
-            await this.clearInput()
+            await this.clearInput();
           }}
         />
         <CompanyNameText>{companyName && companyName}</CompanyNameText>
-        <Display parentState={this.state} />
+        <Display stringValue={stringValue} />
 
         <Keypad
           updateInput={this.updateInput}
@@ -367,7 +245,7 @@ export default class BchInput extends React.Component<Props, State> {
         />
 
         <Payment
-          addSelection={this.addSelection}
+          addSelection={addSelection}
           selectedPaymentType={selectedPaymentType}
           constructBip70Payload={this.constructBip70Payload}
         />

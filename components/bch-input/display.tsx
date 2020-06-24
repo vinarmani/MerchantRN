@@ -6,12 +6,7 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 const defaultTheme = '#5451c9';
 
 export interface Props {
-  parentState: {
-    floatVal: number;
-    bigNumber: any;
-    stringValue: string;
-    currency: string;
-  };
+  stringValue: string;
 }
 
 interface State { }
@@ -22,15 +17,9 @@ export class Display extends React.Component<Props, State> {
   componentDidMount = () => { };
 
   render(): JSX.Element {
-    const {
-      parentState: { currency, floatVal, bigNumber, stringValue }
-    } = this.props;
+    const {stringValue} = this.props;
 
-    return (
-      <InputDisplayText>
-        {stringValue}
-      </InputDisplayText>
-    );
+    return <InputDisplayText>{stringValue}</InputDisplayText>;
   }
 }
 

@@ -45,6 +45,8 @@ export default class Init extends React.Component<Props, State> {
       return;
     }
 
+    // TODO: If BCH, get Sideshift.ai address
+
     let { data }: AxiosResponse = await axios.post(
       'https://pay.cointext.io/create_invoice',
       bip70Payload,
@@ -53,7 +55,7 @@ export default class Init extends React.Component<Props, State> {
     data.fiatAmount = bip70Payload.fiatTotal;
     data.paymentUrl = 'https://pay.cointext.io/i/' + data.paymentId;
     data.paymentAsset = bip70Payload.token_id ? 'USDH' : 'BCH';
-    console.log('axios data', data);
+    // console.log('axios data', data);
 
     // Set up the websocket
     const client = new w3cwebsocket(
@@ -76,7 +78,7 @@ export default class Init extends React.Component<Props, State> {
         try {
           const invoiceData = JSON.parse(e.data);
           if (typeof invoiceData == 'object') {
-            console.log('invoiceData', invoiceData)
+            // console.log('invoiceData', invoiceData)
             self.handleOnChange(invoiceData);
           }
         } catch (err) {
