@@ -17,7 +17,6 @@ export interface Props {
   };
   active?: boolean;
   addSelection: Function;
-  constructBip70Payload: Function;
 }
 
 interface State {
@@ -35,7 +34,7 @@ export class TokenSelection extends React.Component<
   componentDidMount = () => { };
 
   render(): JSX.Element {
-    const { token, addSelection, active, constructBip70Payload } = this.props;
+    const {token, addSelection, active} = this.props;
     const isSVG = token.imagePath.includes(".svg")
     const isLocal = token.imagePath.includes("http")
 
@@ -43,10 +42,7 @@ export class TokenSelection extends React.Component<
       <BaseContainer clickable={false}>
         <TokenChoice style={{ backgroundColor: active ? defaultTheme : '#FBFCFF' }} onPress={async () => {
           await addSelection(token);
-          await constructBip70Payload();
-        }}>
-
-
+          }}>
           <Container>
             {isSVG ?
               <SvgUri

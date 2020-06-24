@@ -7,6 +7,7 @@ import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp, heightPercentageToDP } from 'react-native-responsive-screen';
 import QRCode from 'react-native-qrcode-svg';
 import { w3cwebsocket } from "websocket";
+const bchaddr = require('bchaddrjs-slp');
 
 export interface Props {
   navigation: any
@@ -39,13 +40,49 @@ export default class Init extends React.Component<Props, State> {
     this.submitPayload(bip70Payload);
   }
 
+  getSideshiftOutput = async (output: object) => {
+    if (!output.slpConvertAddress || output.fiatAmount < 1) {
+      // Return output as is, conversion is not possible
+      return output;
+    }
+    try {
+      let { data }: AxiosResponse = await axios.post(
+        'https://sideshift.ai/api/orders',
+        {
+          depositMethodId: 'bch',
+          settleMethodId: 'usdh',
+          settleAddress: output.slpConvertAddress,
+          affiliateId: '9BequucuU',
+          type: 'fixed',
+          settleAmount: String(output.fiatAmount),
+        },
+      );
+      // console.log('SideShift data:', data);
+      output.address = bchaddr.toLegacyAddress(data.depositAddress.address);
+      output.amount = Math.ceil(parseFloat(data.depositMin) * 100000000);
+    } catch (err) {
+      console.error(err);
+    }
+    return output;
+  }
+
   submitPayload = async (bip70Payload) => {
     const { paymentData } = this.state;
     if (paymentData) {
       return;
     }
 
-    // TODO: If BCH, get Sideshift.ai address
+    // TODO: If BCH, get Sideshift.ai address and deposit amount
+    if (!bip70Payload.token_id) {
+      for (let i = 0; i < bip70Payload.outputs.length; i++) {
+        let out = bip70Payload.outputs[i];
+        out = await this.getSideshiftOutput(out);
+        bip70Payload.outputs[i] = out;
+      }
+      bip70Payload.memo = bip70Payload.memo + ' (plus BCH exchange fee)';
+    }
+
+    // console.log('bip70Payload', bip70Payload);
 
     let { data }: AxiosResponse = await axios.post(
       'https://pay.cointext.io/create_invoice',
@@ -96,9 +133,9 @@ export default class Init extends React.Component<Props, State> {
       status = 'expired';
       invoiceData = {
         status: status,
-      }
+      };
     }
-    console.log('status', status);
+    // console.log('status', status);
     if (status === 'paid' || status === 'expired') {
       this.setState({ paymentData: invoiceData });
     }

@@ -88,7 +88,6 @@ export default class BchInput extends React.Component<Props, State> {
     const isValid = {
       isValid: this.checkValid(floatObj),
     };
-    // const payload = this.constructBip70Payload();
     updatePaymentValues({
       ...floatObj,
       ...stringValue,

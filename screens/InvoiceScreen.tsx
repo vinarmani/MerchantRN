@@ -186,6 +186,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           amount?: number;
           fiatAmount?: any;
           address?: string;
+          slpConvertAddress?: string;
         }[];
         currency?: string;
         fiat?: string;
@@ -202,7 +203,8 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           {
             address: bchaddr.toLegacyAddress(merchantBchAddress), // Legacy only
             amount: Math.ceil(bchAmount * 100000000),
-            //fiatAmount: floatVal.toFixed(decimalPlaces)
+            fiatAmount: floatVal.toFixed(decimalPlaces),
+            slpConvertAddress: merchantSlpAddress,
           }
         ],
         memo: userMemo,
