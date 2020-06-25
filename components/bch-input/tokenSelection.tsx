@@ -3,7 +3,7 @@ import { NativeModules, Image, TextInput, TouchableHighlight, Text, View } from 
 import styled from 'styled-components';
 import { SvgUri } from 'react-native-svg'; import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
-
+import { NavigationEvents } from 'react-navigation';
 
 const defaultTheme = '#5451c9';
 
@@ -15,34 +15,56 @@ export interface Props {
     decimal_count: number;
     imagePath: string;
   };
+  mockupArray: [
+    {
+      name: string;
+      ticker: string;
+      tokenID: string;
+      decimal_count: number;
+      imagePath: string;
+    }
+  ];
   active?: boolean;
   addSelection: Function;
+  tokenIndex: number;
 }
 
 interface State {
   active: boolean;
 }
 
-export class TokenSelection extends React.Component<
-  Props,
-  State
-  > {
+export class TokenSelection extends React.Component<Props, State> {
   state: State = {
-    active: false
+    active: false,
   };
 
   componentDidMount = () => { };
 
+  handleLongPress = async () => {
+    const {tokenIndex, mockupArray, addSelection} = this.props;
+    let selectedToken;
+    if (tokenIndex + 1 === mockupArray.length) {
+      selectedToken = mockupArray[0];
+    } else {
+      selectedToken = mockupArray[tokenIndex + 1];
+    }
+    await addSelection(selectedToken);
+  };
+
   render(): JSX.Element {
-    const {token, addSelection, active} = this.props;
-    const isSVG = token.imagePath.includes(".svg")
-    const isLocal = token.imagePath.includes("http")
+    const {token, addSelection, active, mockupArray} = this.props;
+    const isSVG = token.imagePath.includes('.svg');
 
     return (
       <BaseContainer clickable={false}>
-        <TokenChoice style={{ backgroundColor: active ? defaultTheme : '#FBFCFF' }} onPress={async () => {
-          await addSelection(token);
-          }}>
+        <NavigationEvents
+          onWillFocus={async () => {
+            await addSelection(mockupArray[0]);
+          }}
+        />
+        <TokenChoice 
+          style={{ backgroundColor: active ? defaultTheme : '#FBFCFF' }}
+          onLongPress={this.handleLongPress}>
           <Container>
             {isSVG ?
               <SvgUri
@@ -55,8 +77,7 @@ export class TokenSelection extends React.Component<
                 source={token.localImage}
               />}
 
-
-            <DescriptionText style={{ color: active ? '#ffffff' : defaultTheme }}>
+            <DescriptionText style={{color: active ? '#ffffff' : defaultTheme}}>
               {token.ticker.toUpperCase()}
             </DescriptionText>
           </Container>
@@ -68,6 +89,7 @@ export class TokenSelection extends React.Component<
 
 
 const BaseContainer = styled.View`
+  align-self: center;
   flex-direction: row;
 `;
 

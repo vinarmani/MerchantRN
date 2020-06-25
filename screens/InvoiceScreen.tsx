@@ -1,6 +1,6 @@
 import React from "react"
 import BigNumber from "bignumber.js";
-import { Button, TouchableHighlight, TextInput, Text, View } from "react-native"
+import { Button, TouchableOpacity, TextInput, Text, View } from "react-native"
 import axios, { AxiosResponse } from "axios";
 import AsyncStorage from '@react-native-community/async-storage';
 import { SvgUri } from 'react-native-svg';
@@ -241,14 +241,11 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           updatePaymentValues={this.updatePaymentValues}
         />
 
-      {isValid && (
-        <Button
-          onPress={this.goToConfirmScreen}
-          title="Submit"
-          color="#841584"
-        />
-      )}
-
+        {isValid && (
+          <SubmitButton onPress={this.goToConfirmScreen}>
+            <SubmitText>Submit</SubmitText>
+          </SubmitButton>
+        )}
       </Container>
     );
   }
@@ -256,5 +253,20 @@ export default class InvoiceScreen extends React.Component<Props, State> {
 
 const Container = styled.View`
   flex: 1;
-  background-color: #FBFCFF;
+  background-color: #fbfcff;
+`;
+
+const SubmitButton = styled.TouchableOpacity`
+  justify-content: center;
+  height: 100;
+  margin-top: 10;
+  background-color: #841584;
+`;
+
+const SubmitText = styled.Text`
+  font-size: 40;
+  font-weight: 400;
+  color: #fff;
+  text-align: center;
+  text-align-vertical: center;
 `;

@@ -35,8 +35,6 @@ const mockupArray = [
   } */
 ];
 
-console.log('mockupArray', mockupArray);
-
 export interface PaymentProps {
   addSelection: Function;
   selectedPaymentType: {
@@ -70,22 +68,20 @@ export class Payment extends React.Component<PaymentProps, PaymentState> {
       return null;
     }
 
+    const tokenIndex = mockupArray.findIndex(x => selectedPaymentType.ticker === x.ticker)
+
     return (
       <Container>
         <HeaderText>Pay with</HeaderText>
-        {mockupArray.map((x, i) => {
-          const isSelected = selectedPaymentType.ticker === x.ticker;
 
-          return (
-            <TokenSelection
-              key={i}
-              token={x}
-              active={isSelected}
-              addSelection={addSelection}
-              constructBip70Payload={constructBip70Payload}
-            />
-          );
-        })}
+        <TokenSelection
+          tokenIndex={tokenIndex}
+          token={mockupArray[tokenIndex]}
+          active={true}
+          addSelection={addSelection}
+          mockupArray={mockupArray}
+        />
+
       </Container>
     );
   }
@@ -100,10 +96,9 @@ const Container = styled.View`
 
 const HeaderText = styled.Text`
   font-weight: 100;
-  text-align:left;
+  text-align:center;
   font-size: ${wp('5%')};
   color: ${defaultTheme};
-  margin-left:${wp('5%')};
   margin-top:${hp('4%')};
 `;
 
