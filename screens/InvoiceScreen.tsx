@@ -36,6 +36,10 @@ interface State {
   bigNumber: any;
   stringValue: string;
   leadingZero: boolean;
+  optionalOutput: {
+    address: string;
+    msg: string;
+  } | null;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -60,6 +64,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     bigNumber: new BigNumber(0),
     stringValue: '$0.00',
     leadingZero: false,
+    optionalOutput: null,
     selectedPaymentType: null,
   };
 
@@ -107,6 +112,20 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     navigate('Pay', {bip70Payload: bip70Payload});
   };
 
+  setOptionalOutput = (address: string) => {
+    try {
+      const addr = bchaddr.toLegacyAddress(address);
+      const optObj = {
+        address: addr,
+        msg: 'Would you like to leave a tip?',
+      };
+      this.setState({optionalOutput: optObj});
+    } catch (err) {
+      console.log(err);
+      this.setState({optionalOutput: null});
+    }
+  }
+
   getBCHPrice = async () => {
     const {
       data: {
@@ -144,6 +163,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       floatVal,
       selectedPaymentType: { tokenID },
       merchant: {companyName, currency},
+      optionalOutput,
     } = this.state;
     const decimalPlaces = 2;
 
@@ -157,9 +177,13 @@ export default class InvoiceScreen extends React.Component<Props, State> {
 
       const slpTxRequest: {
         token_id: string;
-        slp_outputs: { address: string; amount: number }[];
+        slp_outputs: {address: string; amount: number}[];
         memo?: string;
         fiatTotal?: number;
+        optional_output?: {
+          address: string;
+          msg: string;
+        } | null;
       } = {
         token_id: tokenID,
         slp_outputs: [
@@ -170,6 +194,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         ],
         memo: userMemo,
         fiatTotal: usdhAmount,
+        optional_output: optionalOutput,
       };
       return slpTxRequest;
     } else {
@@ -193,6 +218,10 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         fiatRate?: number;
         memo?: string;
         fiatTotal?: number;
+        optional_output?: {
+          address: string;
+          msg: string;
+        } | null;
       } = {
         fiat: currency,
         outputs: [
@@ -209,6 +238,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         ],
         memo: userMemo,
         fiatTotal: parseFloat(fiatTotal),
+        optional_output: optionalOutput,
       };
 
       return bchTxRequest;
@@ -239,6 +269,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           bigNumber={bigNumber}
           leadingZero={leadingZero}
           updatePaymentValues={this.updatePaymentValues}
+          setOptionalOutput={this.setOptionalOutput}
         />
 
         {isValid && (

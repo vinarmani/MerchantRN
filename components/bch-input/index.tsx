@@ -2,11 +2,19 @@ import BigNumber from "bignumber.js";
 
 import React from 'react';
 
-import { NativeModules, Text, View } from "react-native"
+import {
+  NativeModules,
+  Dimensions,
+  Button,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
+import QRCodeScanner from "react-native-qrcode-scanner";
 import axios, { AxiosResponse } from "axios";
 import { Display } from "./display";
 import { Keypad } from "./keypad";
@@ -32,6 +40,7 @@ export interface BchInputProps {
   bigNumber: any;
   leadingZero: boolean;
   updatePaymentValues: Function;
+  setOptionalOutput: Function;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -43,11 +52,13 @@ export interface BchInputProps {
 
 interface BchInputState {
   decimalPressed: boolean;
+  qrOpen: boolean;
 }
 
 export default class BchInput extends React.Component<Props, State> {
   state: BchInputState = {
     decimalPressed: false,
+    qrOpen: false,
   };
 
   // componentDidMount = async () => {
@@ -133,10 +144,12 @@ export default class BchInput extends React.Component<Props, State> {
     };
     const stringValue = this.setStringValue(floatObj);
     const isValid = {isValid: false};
+    const optionalOutput = {optionalOutput: null}
     updatePaymentValues({
       ...floatObj,
       ...stringValue,
       ...isValid,
+      ...optionalOutput,
     });
     this.setState({
       decimalPressed: false
@@ -223,9 +236,23 @@ export default class BchInput extends React.Component<Props, State> {
     }
   };
 
+  handleNamePress = () => {
+    console.log('name long press');
+  };
+
+  setQrOpen = (isOpen: boolean) => {
+    this.setState({qrOpen: isOpen});
+  };
+
   render(): JSX.Element {
-    const { companyName } = this.props;
-    const { stringValue, addSelection, selectedPaymentType } = this.props;
+    const { qrOpen } = this.state;
+    const {
+      stringValue,
+      addSelection,
+      selectedPaymentType,
+      companyName,
+      setOptionalOutput,
+    } = this.props;
 
     return (
       <Container >
@@ -234,7 +261,43 @@ export default class BchInput extends React.Component<Props, State> {
             await this.clearInput();
           }}
         />
-        <CompanyNameText>{companyName && companyName}</CompanyNameText>
+
+        {qrOpen && (
+          <QROverlayScreen>
+            <Text>Scan QR Code</Text>
+
+            <View
+              style={{
+                height: Dimensions.get('window').width - 12,
+              }}>
+              <QRCodeScanner
+                cameraProps={{
+                  ratio: '1:1',
+                  captureAudio: false
+                }}
+                fadeIn={false}
+                onRead={e => {
+                  const qrData = e.data;
+
+                  if (qrData) {
+                    setOptionalOutput(qrData);
+                  }
+
+                  this.setQrOpen(false);
+                }}
+                cameraStyle={{
+                  height: Dimensions.get('window').width - 32,
+                  width: Dimensions.get('window').width - 32,
+                }}
+              />
+            </View>
+            <Button onPress={() => this.setQrOpen(false)} title="Cancel Scan" />
+          </QROverlayScreen>
+        )}
+
+        <TouchableOpacity onLongPress={() => this.setQrOpen(true)}>
+          <CompanyNameText>{companyName && companyName}</CompanyNameText>
+        </TouchableOpacity>
         <Display stringValue={stringValue} />
 
         <Keypad
@@ -246,7 +309,6 @@ export default class BchInput extends React.Component<Props, State> {
         <Payment
           addSelection={addSelection}
           selectedPaymentType={selectedPaymentType}
-          constructBip70Payload={this.constructBip70Payload}
         />
       </Container>
     );
@@ -263,12 +325,22 @@ const Container = styled.View`
 const CompanyNameText = styled.Text`
   text-align:center;
   font-weight: 100;
-  font-size: ${wp('3%')};
+  font-size: ${wp('5%')};
   color: ${defaultTheme};
   margin-top:${hp('2%')};
 `;
 
-
-
+const QROverlayScreen = styled(View)`
+  position: absolute;
+  padding: 0 16px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: ${Dimensions.get('window').width}px;
+  height: ${Dimensions.get('window').height}px;
+  z-index: 1;
+  background-color: black;
+`;
 
 export const BchInputConsumer = Consumer;
