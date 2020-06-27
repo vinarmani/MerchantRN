@@ -35,7 +35,7 @@ interface State {
   floatVal: number;
   bigNumber: any;
   stringValue: string;
-  leadingZero: boolean;
+  centString: string;
   optionalOutput: {
     address: string;
     msg: string;
@@ -63,7 +63,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     floatVal: 0,
     bigNumber: new BigNumber(0),
     stringValue: '$0.00',
-    leadingZero: false,
+    centString: '',
     optionalOutput: null,
     selectedPaymentType: null,
   };
@@ -252,7 +252,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       stringValue,
       floatVal,
       bigNumber,
-      leadingZero,
+      centString,
       selectedPaymentType,
     } = this.state;
 
@@ -267,7 +267,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           stringValue={stringValue}
           floatVal={floatVal}
           bigNumber={bigNumber}
-          leadingZero={leadingZero}
+          centString={centString}
           updatePaymentValues={this.updatePaymentValues}
           setOptionalOutput={this.setOptionalOutput}
         />
@@ -289,7 +289,7 @@ const Container = styled.View`
 
 const SubmitButton = styled.TouchableOpacity`
   justify-content: center;
-  height: 100;
+  height: 80;
   margin-top: 10;
   background-color: #841584;
 `;

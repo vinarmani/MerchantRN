@@ -38,7 +38,7 @@ export interface BchInputProps {
   stringValue: string;
   floatVal: number;
   bigNumber: any;
-  leadingZero: boolean;
+  centString: string;
   updatePaymentValues: Function;
   setOptionalOutput: Function;
   selectedPaymentType: {
@@ -51,13 +51,11 @@ export interface BchInputProps {
 }
 
 interface BchInputState {
-  decimalPressed: boolean;
   qrOpen: boolean;
 }
 
 export default class BchInput extends React.Component<Props, State> {
   state: BchInputState = {
-    decimalPressed: false,
     qrOpen: false,
   };
 
@@ -95,13 +93,11 @@ export default class BchInput extends React.Component<Props, State> {
   updateInput = (val: number) => {
     const {updatePaymentValues} = this.props;
     const floatObj = this.updateIntVal(val);
-    const stringValue = this.setStringValue(floatObj);
     const isValid = {
       isValid: this.checkValid(floatObj),
     };
     updatePaymentValues({
       ...floatObj,
-      ...stringValue,
       ...isValid,
     });
   };
@@ -117,13 +113,11 @@ export default class BchInput extends React.Component<Props, State> {
   //     floatObj = {
   //       floatVal: int,
   //       bigNumber: big,
-  //       decimalPressed: false,
   //     };
   //   } else {
   //     floatObj = {
   //       floatVal: 0,
   //       bigNumber: big,
-  //       decimalPressed: false,
   //     };
   //   }
   //   const stringValue = this.setStringValue(floatObj);
@@ -140,7 +134,7 @@ export default class BchInput extends React.Component<Props, State> {
     const floatObj = {
       floatVal: 0,
       bigNumber: big,
-      leadingZero: false,
+      centString: '',
     };
     const stringValue = this.setStringValue(floatObj);
     const isValid = {isValid: false};
@@ -150,9 +144,6 @@ export default class BchInput extends React.Component<Props, State> {
       ...stringValue,
       ...isValid,
       ...optionalOutput,
-    });
-    this.setState({
-      decimalPressed: false
     });
   };
 
@@ -173,44 +164,20 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
   updateIntVal = (val: number) => {
-    const {decimalPressed} = this.state;
-    const {floatVal, bigNumber, leadingZero} = this.props;
-    let concat: string;
-    concat = `${floatVal}${val}`;
+    const {centString} = this.props;
+    let cents: string;
+    cents = `${centString}${val}`;
+    const decimalPlaces = this.getFiatDecimalPlaces();
+    const fiatValue = parseInt(cents, 10) / (10 ** decimalPlaces);
 
-    const canEdit = this.checkCanEdit(concat);
+    const big = new BigNumber(fiatValue);
 
-    let setZero = false;
-
-    if (decimalPressed) {
-      const containsDecimal = /\./.test(concat);
-      if (!containsDecimal) {
-        if (leadingZero) {
-          concat = `${floatVal}.0${val}`;
-        } else {
-          concat = `${floatVal}.${val}`;
-        }
-        if (val === 0) {
-          setZero = true;
-        }
-      }
-    }
-
-    if (canEdit) {
-      const big = new BigNumber(concat);
-
-      return {
-        floatVal: parseFloat(concat),
-        bigNumber: big,
-        leadingZero: setZero,
-      };
-    } else {
-      return {
-        floatVal: floatVal,
-        bigNumber: bigNumber,
-        leadingZero: setZero,
-      };
-    }
+    return {
+      floatVal: parseFloat(fiatValue),
+      bigNumber: big,
+      stringValue: '$' + big.toFixed(decimalPlaces),
+      centString: cents,
+    };
   };
 
   checkCanEdit = (concat: string) => {
@@ -225,15 +192,6 @@ export default class BchInput extends React.Component<Props, State> {
       return true;
     }
     return false;
-  };
-
-  handleDecimal = () => {
-    const length: number = this.getFiatDecimalPlaces();
-    if (length > 0) {
-      this.setState({
-        decimalPressed: true
-      });
-    }
   };
 
   handleNamePress = () => {
@@ -300,11 +258,7 @@ export default class BchInput extends React.Component<Props, State> {
         </TouchableOpacity>
         <Display stringValue={stringValue} />
 
-        <Keypad
-          updateInput={this.updateInput}
-          clearInput={this.clearInput}
-          handleDecimal={this.handleDecimal}
-        />
+        <Keypad updateInput={this.updateInput} clearInput={this.clearInput} />
 
         <Payment
           addSelection={addSelection}
