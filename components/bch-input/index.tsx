@@ -41,6 +41,10 @@ export interface BchInputProps {
   centString: string;
   updatePaymentValues: Function;
   setOptionalOutput: Function;
+  optionalOutput: {
+    address: string;
+    msg: string;
+  } | null;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -128,22 +132,21 @@ export default class BchInput extends React.Component<Props, State> {
   //   this.checkValid(floatObj);
   // };
 
-  clearInput = async () => {
-    const {updatePaymentValues} = this.props;
+  clearInput = (clearTip: boolean = false) => {
+    const {updatePaymentValues, optionalOutput} = this.props;
     const big = new BigNumber(0);
     const floatObj = {
       floatVal: 0,
       bigNumber: big,
       centString: '',
+      optionalOutput: clearTip ? null : optionalOutput,
     };
     const stringValue = this.setStringValue(floatObj);
     const isValid = {isValid: false};
-    const optionalOutput = {optionalOutput: null}
     updatePaymentValues({
       ...floatObj,
       ...stringValue,
       ...isValid,
-      ...optionalOutput,
     });
   };
 
@@ -209,25 +212,23 @@ export default class BchInput extends React.Component<Props, State> {
       addSelection,
       selectedPaymentType,
       companyName,
+      optionalOutput,
       setOptionalOutput,
     } = this.props;
 
     return (
-      <Container >
+      <Container>
         <NavigationEvents
           onWillFocus={async () => {
-            await this.clearInput();
+            this.clearInput(true);
           }}
         />
 
         {qrOpen && (
           <QROverlayScreen>
-            <Text>Scan QR Code</Text>
+            <QRText>Scan tip address QR Code</QRText>
 
-            <View
-              style={{
-                height: Dimensions.get('window').width - 12,
-              }}>
+            <QRContainer>
               <QRCodeScanner
                 cameraProps={{
                   ratio: '1:1',
@@ -248,13 +249,21 @@ export default class BchInput extends React.Component<Props, State> {
                   width: Dimensions.get('window').width - 32,
                 }}
               />
-            </View>
-            <Button onPress={() => this.setQrOpen(false)} title="Cancel Scan" />
+            </QRContainer>
+            <ButtonBottom>
+              <Button
+                onPress={() => this.setQrOpen(false)}
+                title="Cancel Scan"
+              />
+            </ButtonBottom>
           </QROverlayScreen>
         )}
 
         <TouchableOpacity onLongPress={() => this.setQrOpen(true)}>
-          <CompanyNameText>{companyName && companyName}</CompanyNameText>
+          <CompanyNameText>
+            {companyName && companyName}
+            {optionalOutput && ' *tip enabled*'}
+          </CompanyNameText>
         </TouchableOpacity>
         <Display stringValue={stringValue} />
 
@@ -277,11 +286,11 @@ const Container = styled.View`
 
 
 const CompanyNameText = styled.Text`
-  text-align:center;
+  text-align: center;
   font-weight: 100;
   font-size: ${wp('5%')};
   color: ${defaultTheme};
-  margin-top:${hp('2%')};
+  margin-top: ${hp('2%')};
 `;
 
 const QROverlayScreen = styled(View)`
@@ -295,6 +304,24 @@ const QROverlayScreen = styled(View)`
   height: ${Dimensions.get('window').height}px;
   z-index: 1;
   background-color: black;
+`;
+
+const QRText = styled.Text`
+  text-align: center;
+  font-weight: 100;
+  font-size: ${wp('5%')};
+  color: white;
+  margin-top: ${hp('2%')};
+`;
+
+const QRContainer = styled(View)`
+  margin-top: ${hp('12%')};
+`;
+
+const ButtonBottom = styled(View)`
+  flex: 1;
+  justify-content: flex-end;
+  margin-bottom: 36;
 `;
 
 export const BchInputConsumer = Consumer;

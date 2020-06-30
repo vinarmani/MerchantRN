@@ -254,6 +254,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       bigNumber,
       centString,
       selectedPaymentType,
+      optionalOutput,
     } = this.state;
 
     return (
@@ -269,6 +270,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           bigNumber={bigNumber}
           centString={centString}
           updatePaymentValues={this.updatePaymentValues}
+          optionalOutput={optionalOutput}
           setOptionalOutput={this.setOptionalOutput}
         />
 
@@ -289,13 +291,12 @@ const Container = styled.View`
 
 const SubmitButton = styled.TouchableOpacity`
   justify-content: center;
-  height: 80;
-  margin-top: 10;
+  height: ${hp('10%')};
   background-color: #841584;
 `;
 
 const SubmitText = styled.Text`
-  font-size: 40;
+  font-size: ${hp('7%')};
   font-weight: 400;
   color: #fff;
   text-align: center;
