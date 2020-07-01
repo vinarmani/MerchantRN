@@ -4,6 +4,7 @@ import { createStackNavigator } from 'react-navigation-stack';
 import Init from './screens/Init';
 import InvoiceScreen from './screens/InvoiceScreen';
 import PayScreen from './screens/PayScreen';
+import LedgerScreen from './screens/LedgerScreen';
 
 const MainNavigator = createStackNavigator({
   // Init: {
@@ -18,6 +19,11 @@ const MainNavigator = createStackNavigator({
   },
   Pay: {
     screen: PayScreen, navigationOptions: {
+      header: null,
+    }
+  },
+  Ledger: {
+    screen: LedgerScreen, navigationOptions: {
       header: null,
     }
   },

@@ -112,6 +112,11 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     navigate('Pay', {bip70Payload: bip70Payload});
   };
 
+  goToLedgerScreen = async () => {
+    const { navigate } = this.props.navigation;
+    navigate('Ledger', {slpAddress: merchantSlpAddress});
+  };
+
   setOptionalOutput = (address: string) => {
     try {
       const addr = bchaddr.toLegacyAddress(address);
@@ -272,6 +277,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           updatePaymentValues={this.updatePaymentValues}
           optionalOutput={optionalOutput}
           setOptionalOutput={this.setOptionalOutput}
+          goToLedgerScreen={this.goToLedgerScreen}
         />
 
         {isValid && (

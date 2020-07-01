@@ -41,6 +41,7 @@ export interface BchInputProps {
   centString: string;
   updatePaymentValues: Function;
   setOptionalOutput: Function;
+  goToLedgerScreen: Function;
   optionalOutput: {
     address: string;
     msg: string;
@@ -214,6 +215,7 @@ export default class BchInput extends React.Component<Props, State> {
       companyName,
       optionalOutput,
       setOptionalOutput,
+      goToLedgerScreen,
     } = this.props;
 
     return (
@@ -265,7 +267,10 @@ export default class BchInput extends React.Component<Props, State> {
             {optionalOutput && ' *tip enabled*'}
           </CompanyNameText>
         </TouchableOpacity>
-        <Display stringValue={stringValue} />
+
+        <TouchableOpacity onLongPress={goToLedgerScreen}>
+          <Display stringValue={stringValue} />
+        </TouchableOpacity>
 
         <Keypad updateInput={this.updateInput} clearInput={this.clearInput} />
 
