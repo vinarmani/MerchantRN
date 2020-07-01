@@ -22,7 +22,7 @@ interface State {
   response: object;
 }
 
-export default class Init extends React.Component<Props, State> {
+export default class PayScreen extends React.Component<Props, State> {
 
   state: State = {
     isValid: false,

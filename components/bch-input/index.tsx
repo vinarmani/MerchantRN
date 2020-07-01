@@ -2,11 +2,19 @@ import BigNumber from "bignumber.js";
 
 import React from 'react';
 
-import { NativeModules, Text, View } from "react-native"
+import {
+  NativeModules,
+  Dimensions,
+  Button,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SvgUri } from 'react-native-svg';
 import styled from 'styled-components';
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 
+import QRCodeScanner from "react-native-qrcode-scanner";
 import axios, { AxiosResponse } from "axios";
 import { Display } from "./display";
 import { Keypad } from "./keypad";
@@ -30,8 +38,14 @@ export interface BchInputProps {
   stringValue: string;
   floatVal: number;
   bigNumber: any;
-  leadingZero: boolean;
+  centString: string;
   updatePaymentValues: Function;
+  setOptionalOutput: Function;
+  goToLedgerScreen: Function;
+  optionalOutput: {
+    address: string;
+    msg: string;
+  } | null;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -42,12 +56,12 @@ export interface BchInputProps {
 }
 
 interface BchInputState {
-  decimalPressed: boolean;
+  qrOpen: boolean;
 }
 
 export default class BchInput extends React.Component<Props, State> {
   state: BchInputState = {
-    decimalPressed: false,
+    qrOpen: false,
   };
 
   // componentDidMount = async () => {
@@ -84,13 +98,11 @@ export default class BchInput extends React.Component<Props, State> {
   updateInput = (val: number) => {
     const {updatePaymentValues} = this.props;
     const floatObj = this.updateIntVal(val);
-    const stringValue = this.setStringValue(floatObj);
     const isValid = {
       isValid: this.checkValid(floatObj),
     };
     updatePaymentValues({
       ...floatObj,
-      ...stringValue,
       ...isValid,
     });
   };
@@ -106,13 +118,11 @@ export default class BchInput extends React.Component<Props, State> {
   //     floatObj = {
   //       floatVal: int,
   //       bigNumber: big,
-  //       decimalPressed: false,
   //     };
   //   } else {
   //     floatObj = {
   //       floatVal: 0,
   //       bigNumber: big,
-  //       decimalPressed: false,
   //     };
   //   }
   //   const stringValue = this.setStringValue(floatObj);
@@ -123,13 +133,14 @@ export default class BchInput extends React.Component<Props, State> {
   //   this.checkValid(floatObj);
   // };
 
-  clearInput = async () => {
-    const {updatePaymentValues} = this.props;
+  clearInput = (clearTip: boolean = false) => {
+    const {updatePaymentValues, optionalOutput} = this.props;
     const big = new BigNumber(0);
     const floatObj = {
       floatVal: 0,
       bigNumber: big,
-      leadingZero: false,
+      centString: '',
+      optionalOutput: clearTip ? null : optionalOutput,
     };
     const stringValue = this.setStringValue(floatObj);
     const isValid = {isValid: false};
@@ -137,9 +148,6 @@ export default class BchInput extends React.Component<Props, State> {
       ...floatObj,
       ...stringValue,
       ...isValid,
-    });
-    this.setState({
-      decimalPressed: false
     });
   };
 
@@ -160,44 +168,20 @@ export default class BchInput extends React.Component<Props, State> {
   };
 
   updateIntVal = (val: number) => {
-    const {decimalPressed} = this.state;
-    const {floatVal, bigNumber, leadingZero} = this.props;
-    let concat: string;
-    concat = `${floatVal}${val}`;
+    const {centString} = this.props;
+    let cents: string;
+    cents = `${centString}${val}`;
+    const decimalPlaces = this.getFiatDecimalPlaces();
+    const fiatValue = parseInt(cents, 10) / (10 ** decimalPlaces);
 
-    const canEdit = this.checkCanEdit(concat);
+    const big = new BigNumber(fiatValue);
 
-    let setZero = false;
-
-    if (decimalPressed) {
-      const containsDecimal = /\./.test(concat);
-      if (!containsDecimal) {
-        if (leadingZero) {
-          concat = `${floatVal}.0${val}`;
-        } else {
-          concat = `${floatVal}.${val}`;
-        }
-        if (val === 0) {
-          setZero = true;
-        }
-      }
-    }
-
-    if (canEdit) {
-      const big = new BigNumber(concat);
-
-      return {
-        floatVal: parseFloat(concat),
-        bigNumber: big,
-        leadingZero: setZero,
-      };
-    } else {
-      return {
-        floatVal: floatVal,
-        bigNumber: bigNumber,
-        leadingZero: setZero,
-      };
-    }
+    return {
+      floatVal: parseFloat(fiatValue),
+      bigNumber: big,
+      stringValue: '$' + big.toFixed(decimalPlaces),
+      centString: cents,
+    };
   };
 
   checkCanEdit = (concat: string) => {
@@ -214,39 +198,85 @@ export default class BchInput extends React.Component<Props, State> {
     return false;
   };
 
-  handleDecimal = () => {
-    const length: number = this.getFiatDecimalPlaces();
-    if (length > 0) {
-      this.setState({
-        decimalPressed: true
-      });
-    }
+  handleNamePress = () => {
+    console.log('name long press');
+  };
+
+  setQrOpen = (isOpen: boolean) => {
+    this.setState({qrOpen: isOpen});
   };
 
   render(): JSX.Element {
-    const { companyName } = this.props;
-    const { stringValue, addSelection, selectedPaymentType } = this.props;
+    const { qrOpen } = this.state;
+    const {
+      stringValue,
+      addSelection,
+      selectedPaymentType,
+      companyName,
+      optionalOutput,
+      setOptionalOutput,
+      goToLedgerScreen,
+    } = this.props;
 
     return (
-      <Container >
+      <Container>
         <NavigationEvents
           onWillFocus={async () => {
-            await this.clearInput();
+            this.clearInput(true);
           }}
         />
-        <CompanyNameText>{companyName && companyName}</CompanyNameText>
-        <Display stringValue={stringValue} />
 
-        <Keypad
-          updateInput={this.updateInput}
-          clearInput={this.clearInput}
-          handleDecimal={this.handleDecimal}
-        />
+        {qrOpen && (
+          <QROverlayScreen>
+            <QRText>Scan tip address QR Code</QRText>
+
+            <QRContainer>
+              <QRCodeScanner
+                cameraProps={{
+                  ratio: '1:1',
+                  captureAudio: false
+                }}
+                fadeIn={false}
+                onRead={e => {
+                  const qrData = e.data;
+
+                  if (qrData) {
+                    setOptionalOutput(qrData);
+                  }
+
+                  this.setQrOpen(false);
+                }}
+                cameraStyle={{
+                  height: Dimensions.get('window').width - 32,
+                  width: Dimensions.get('window').width - 32,
+                }}
+              />
+            </QRContainer>
+            <ButtonBottom>
+              <Button
+                onPress={() => this.setQrOpen(false)}
+                title="Cancel Scan"
+              />
+            </ButtonBottom>
+          </QROverlayScreen>
+        )}
+
+        <TouchableOpacity onLongPress={() => this.setQrOpen(true)}>
+          <CompanyNameText>
+            {companyName && companyName}
+            {optionalOutput && ' *tip enabled*'}
+          </CompanyNameText>
+        </TouchableOpacity>
+
+        <TouchableOpacity onLongPress={goToLedgerScreen}>
+          <Display stringValue={stringValue} />
+        </TouchableOpacity>
+
+        <Keypad updateInput={this.updateInput} clearInput={this.clearInput} />
 
         <Payment
           addSelection={addSelection}
           selectedPaymentType={selectedPaymentType}
-          constructBip70Payload={this.constructBip70Payload}
         />
       </Container>
     );
@@ -261,14 +291,42 @@ const Container = styled.View`
 
 
 const CompanyNameText = styled.Text`
-  text-align:center;
+  text-align: center;
   font-weight: 100;
-  font-size: ${wp('3%')};
+  font-size: ${wp('5%')};
   color: ${defaultTheme};
-  margin-top:${hp('2%')};
+  margin-top: ${hp('2%')};
 `;
 
+const QROverlayScreen = styled(View)`
+  position: absolute;
+  padding: 0 16px;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: ${Dimensions.get('window').width}px;
+  height: ${Dimensions.get('window').height}px;
+  z-index: 1;
+  background-color: black;
+`;
 
+const QRText = styled.Text`
+  text-align: center;
+  font-weight: 100;
+  font-size: ${wp('5%')};
+  color: white;
+  margin-top: ${hp('2%')};
+`;
 
+const QRContainer = styled(View)`
+  margin-top: ${hp('12%')};
+`;
+
+const ButtonBottom = styled(View)`
+  flex: 1;
+  justify-content: flex-end;
+  margin-bottom: 36;
+`;
 
 export const BchInputConsumer = Consumer;

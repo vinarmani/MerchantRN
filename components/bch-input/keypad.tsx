@@ -51,8 +51,8 @@ export class Keypad extends React.Component<KeypadProps, KeypadState> {
         <NumberInput onPress={() => updateInput(9)}>
           <NumberText> 9</NumberText>
         </NumberInput>
-        <NumberInput onPress={() => handleDecimal()}>
-          <NumberText> .</NumberText>
+        <NumberInput>
+          <NumberText> </NumberText>
         </NumberInput>
         <NumberInput onPress={() => updateInput(0)}>
           <NumberText> 0</NumberText>

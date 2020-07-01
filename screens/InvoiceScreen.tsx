@@ -35,7 +35,11 @@ interface State {
   floatVal: number;
   bigNumber: any;
   stringValue: string;
-  leadingZero: boolean;
+  centString: string;
+  optionalOutput: {
+    address: string;
+    msg: string;
+  } | null;
   selectedPaymentType: {
     name: string;
     ticker: string;
@@ -59,7 +63,8 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     floatVal: 0,
     bigNumber: new BigNumber(0),
     stringValue: '$0.00',
-    leadingZero: false,
+    centString: '',
+    optionalOutput: null,
     selectedPaymentType: null,
   };
 
@@ -107,6 +112,25 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     navigate('Pay', {bip70Payload: bip70Payload});
   };
 
+  goToLedgerScreen = async () => {
+    const { navigate } = this.props.navigation;
+    navigate('Ledger', {slpAddress: merchantSlpAddress});
+  };
+
+  setOptionalOutput = (address: string) => {
+    try {
+      const addr = bchaddr.toLegacyAddress(address);
+      const optObj = {
+        address: addr,
+        msg: 'Would you like to leave a tip?',
+      };
+      this.setState({optionalOutput: optObj});
+    } catch (err) {
+      console.log(err);
+      this.setState({optionalOutput: null});
+    }
+  }
+
   getBCHPrice = async () => {
     const {
       data: {
@@ -144,6 +168,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       floatVal,
       selectedPaymentType: { tokenID },
       merchant: {companyName, currency},
+      optionalOutput,
     } = this.state;
     const decimalPlaces = 2;
 
@@ -157,9 +182,13 @@ export default class InvoiceScreen extends React.Component<Props, State> {
 
       const slpTxRequest: {
         token_id: string;
-        slp_outputs: { address: string; amount: number }[];
+        slp_outputs: {address: string; amount: number}[];
         memo?: string;
         fiatTotal?: number;
+        optional_output?: {
+          address: string;
+          msg: string;
+        } | null;
       } = {
         token_id: tokenID,
         slp_outputs: [
@@ -170,6 +199,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         ],
         memo: userMemo,
         fiatTotal: usdhAmount,
+        optional_output: optionalOutput,
       };
       return slpTxRequest;
     } else {
@@ -193,6 +223,10 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         fiatRate?: number;
         memo?: string;
         fiatTotal?: number;
+        optional_output?: {
+          address: string;
+          msg: string;
+        } | null;
       } = {
         fiat: currency,
         outputs: [
@@ -209,6 +243,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
         ],
         memo: userMemo,
         fiatTotal: parseFloat(fiatTotal),
+        optional_output: optionalOutput,
       };
 
       return bchTxRequest;
@@ -222,8 +257,9 @@ export default class InvoiceScreen extends React.Component<Props, State> {
       stringValue,
       floatVal,
       bigNumber,
-      leadingZero,
+      centString,
       selectedPaymentType,
+      optionalOutput,
     } = this.state;
 
     return (
@@ -237,8 +273,11 @@ export default class InvoiceScreen extends React.Component<Props, State> {
           stringValue={stringValue}
           floatVal={floatVal}
           bigNumber={bigNumber}
-          leadingZero={leadingZero}
+          centString={centString}
           updatePaymentValues={this.updatePaymentValues}
+          optionalOutput={optionalOutput}
+          setOptionalOutput={this.setOptionalOutput}
+          goToLedgerScreen={this.goToLedgerScreen}
         />
 
         {isValid && (
@@ -258,13 +297,12 @@ const Container = styled.View`
 
 const SubmitButton = styled.TouchableOpacity`
   justify-content: center;
-  height: 100;
-  margin-top: 10;
+  height: ${hp('10%')};
   background-color: #841584;
 `;
 
 const SubmitText = styled.Text`
-  font-size: 40;
+  font-size: ${hp('7%')};
   font-weight: 400;
   color: #fff;
   text-align: center;
