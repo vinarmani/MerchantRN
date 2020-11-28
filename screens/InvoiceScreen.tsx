@@ -159,7 +159,7 @@ export default class InvoiceScreen extends React.Component<Props, State> {
     return parseFloat(spiceAmount.toFixed(8));
   };
 
-  getUsdhAmount = (fiatValue: number) => {
+  getUsdAmount = (fiatValue: number) => {
     return parseFloat(fiatValue.toFixed(2));
   };
 
@@ -176,9 +176,9 @@ export default class InvoiceScreen extends React.Component<Props, State> {
 
     if (isSLP) {
       // const spiceAmount = await this.getSpiceAmount(floatVal);
-      const usdhAmount = this.getUsdhAmount(floatVal);
+      const usdhAmount = this.getUsdAmount(floatVal);
 
-      const userMemo = 'Payment of ' + usdhAmount + ' USDH to ' + companyName;
+      const userMemo = 'Payment of ' + usdhAmount + ' USDt to ' + companyName;
 
       const slpTxRequest: {
         token_id: string;

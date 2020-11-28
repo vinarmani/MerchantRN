@@ -27,11 +27,8 @@ target 'slpMerchant' do
   pod 'glog', :podspec => '../node_modules/react-native/third-party-podspecs/glog.podspec'
   pod 'Folly', :podspec => '../node_modules/react-native/third-party-podspecs/Folly.podspec'
 
-  pod 'RNSVG', :path => '../node_modules/react-native-svg'
 
-  pod 'react-native-camera', :path => '../node_modules/react-native-camera'
 
-  pod 'RNPermissions', :path => '../node_modules/react-native-permissions'
 
   target 'slpMerchantTests' do
     inherit! :search_paths

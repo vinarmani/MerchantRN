@@ -10,12 +10,20 @@ const defaultTheme = '#5451c9';
 
 
 const mockupArray = [
+  // {
+  //   tokenID: 'c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479',
+  //   imagePath: 'https://tokens.bch.sx/128/c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479.png',
+  //   localImage: require('../../assets/usdh.png'),
+  //   name: 'USDH',
+  //   ticker: 'USDH',
+  //   decimal_count: 2
+  // },
   {
-    tokenID: 'c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479',
-    imagePath: 'https://tokens.bch.sx/128/c4b0d62156b3fa5c8f3436079b5394f7edc1bef5dc1cd2f9d0c4d46f82cca479.png',
-    localImage: require('../../assets/usdh.png'),
-    name: 'USDH',
-    ticker: 'USDH',
+    tokenID: '9fc89d6b7d5be2eac0b3787c5b8236bca5de641b5bafafc8f450727b63615c11',
+    imagePath: 'https://tokens.bch.sx/128/9fc89d6b7d5be2eac0b3787c5b8236bca5de641b5bafafc8f450727b63615c11.png',
+    localImage: require('../../assets/usdt.png'),
+    name: 'USDT',
+    ticker: 'USDT',
     decimal_count: 8
   },
   {

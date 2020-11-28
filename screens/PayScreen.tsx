@@ -46,15 +46,22 @@ export default class PayScreen extends React.Component<Props, State> {
       return output;
     }
     try {
-      let { data }: AxiosResponse = await axios.post(
-        'https://sideshift.ai/api/orders',
+      const { data: quote }: AxiosResponse = await axios.post(
+        'https://sideshift.ai/api/v1/quotes',
         {
-          depositMethodId: 'bch',
-          settleMethodId: 'usdh',
-          settleAddress: output.slpConvertAddress,
+          depositMethod: 'bch',
+          settleMethod: 'usdtBch',
+          affiliateId: '9BequucuU',
+          settleAmount: String(output.fiatAmount),
+        },
+      );
+      const { data }: AxiosResponse = await axios.post(
+        'https://sideshift.ai/api/v1/orders',
+        {
           affiliateId: '9BequucuU',
           type: 'fixed',
-          settleAmount: String(output.fiatAmount),
+          quoteId: quote.id,
+          settleAddress: output.slpConvertAddress,
         },
       );
       // console.log('SideShift data:', data);
@@ -91,7 +98,7 @@ export default class PayScreen extends React.Component<Props, State> {
 
     data.fiatAmount = bip70Payload.fiatTotal;
     data.paymentUrl = 'https://pay.cointext.io/i/' + data.paymentId;
-    data.paymentAsset = bip70Payload.token_id ? 'USDH' : 'BCH';
+    data.paymentAsset = bip70Payload.token_id ? 'USDT' : 'BCH';
     // console.log('axios data', data);
 
     // Set up the websocket
